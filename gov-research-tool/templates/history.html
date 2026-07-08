@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}History — GovResearch{% endblock %}
+
+{% block content %}
+<h2 style="font-size:19px;font-weight:700;margin-bottom:16px">Approved Records</h2>
+
+{% if approved %}
+<div class="card">
+  {% for r in approved %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+              padding:10px 0;border-bottom:1px solid var(--border-soft)">
+    <div>
+      <div style="font-weight:600">{{ r.service_name }}</div>
+      <div class="hint">{{ r.state }} · v{{ r.version }} · {{ r.approved_at[:10] }}</div>
+    </div>
+    <div class="row gap-2">
+      <form method="post" action="/re-verify/{{ r.service_key }}" style="display:inline">
+        <button type="submit" class="btn btn-sm">Re-verify</button>
+      </form>
+      <a href="/export/{{ r.service_key }}" class="btn btn-sm">Export JSON</a>
+    </div>
+  </div>
+  {% endfor %}
+  <div style="margin-top:14px">
+    <a href="/export-all" class="btn btn-sm">Export all as JSON</a>
+  </div>
+</div>
+{% else %}
+<div class="card"><p class="muted">No approved records yet.</p></div>
+{% endif %}
+
+<h2 style="font-size:19px;font-weight:700;margin:24px 0 16px">Recent Research Jobs</h2>
+
+{% if jobs %}
+<div class="card">
+  {% for j in jobs %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+              padding:10px 0;border-bottom:1px solid var(--border-soft)">
+    <div>
+      <div style="font-weight:600">{{ j.service_name }} <span class="muted">·</span> {{ j.state }}</div>
+      <div class="hint">{{ j.created_at[:16] }}</div>
+    </div>
+    <div class="row gap-2">
+      <span class="badge badge-{{ j.status }}">{{ j.status }}</span>
+      {% if j.status == 'done' %}
+      <a href="/review/{{ j.id }}" class="btn btn-sm">View</a>
+      {% elif j.status == 'running' or j.status == 'pending' %}
+      <a href="/status/{{ j.id }}" class="btn btn-sm">Status</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><p class="muted">No research jobs yet.</p></div>
+{% endif %}
+{% endblock %}

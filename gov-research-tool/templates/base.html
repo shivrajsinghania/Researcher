@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Gov Research Tool{% endblock %}</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel2: #16202e;
+      --border: #334155;
+      --border-soft: #263244;
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --muted2: #475569;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.12);
+      --danger: #f87171;
+      --warn: #facc15;
+      --success: #4ade80;
+      --found: rgba(74,222,128,0.14);
+      --uncertain: rgba(250,204,21,0.14);
+      --notfound: rgba(248,113,113,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 15px; }
+    body {
+      font-family: system-ui, -apple-system, Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding-bottom: 60px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .nav {
+      background: var(--panel); border-bottom: 1px solid var(--border);
+      padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand { font-weight: 700; font-size: 15px; color: var(--accent); }
+    .nav a { font-size: 13px; color: var(--muted); }
+    .nav a:hover { color: var(--text); text-decoration: none; }
+    .nav-sep { color: var(--border); }
+
+    .wrap { max-width: 760px; margin: 0 auto; padding: 20px 14px; }
+
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 16px; font-weight: 700; margin-bottom: 14px;
+      color: var(--text);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--panel); color: var(--text);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 9px 16px; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: background .12s;
+      -webkit-appearance: none;
+    }
+    .btn:hover { background: #263244; border-color: #475569; text-decoration: none; }
+    .btn-accent { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+    .btn-accent:hover { background: #7dd3fc; border-color: #7dd3fc; }
+    .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+    .btn-danger { border-color: var(--danger); color: var(--danger); }
+    .btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .field label { font-size: 12.5px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: .03em; }
+    .field input, .field select, .field textarea {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 10px 12px; font-size: 14px; outline: none; width: 100%;
+      font-family: inherit;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+    .field textarea { resize: vertical; min-height: 60px; }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: .02em;
+    }
+    .badge-found { background: var(--found); color: var(--success); }
+    .badge-uncertain { background: var(--uncertain); color: var(--warn); }
+    .badge-not_found { background: var(--notfound); color: var(--danger); }
+    .badge-done { background: rgba(74,222,128,0.14); color: var(--success); }
+    .badge-running { background: var(--accent-soft); color: var(--accent); }
+    .badge-error { background: var(--notfound); color: var(--danger); }
+    .badge-pending { background: rgba(250,204,21,0.14); color: var(--warn); }
+
+    .hint { font-size: 12px; color: var(--muted); }
+    .muted { color: var(--muted); }
+
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .gap-2 { gap: 8px; }
+
+    @media (max-width: 600px) {
+      .card { padding: 14px; }
+      .wrap { padding: 14px 10px; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">🔍 GovResearch</span>
+    <span class="nav-sep">|</span>
+    <a href="/">Research</a>
+    <a href="/history">History</a>
+  </nav>
+  <div class="wrap">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

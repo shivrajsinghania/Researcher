@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: gov-research-tool
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: >
+      apt-get update -y &&
+      apt-get install -y tesseract-ocr tesseract-ocr-hin poppler-utils &&
+      pip install -r requirements.txt &&
+      python -m playwright install --with-deps chromium
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 300
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PLAYWRIGHT_ENABLED
+        value: "true"
+      - key: REQUEST_TIMEOUT
+        value: "20"
+      - key: MAX_PAGES_PER_DOMAIN
+        value: "3"
+      - key: MAX_PDFS
+        value: "3"
