@@ -107,7 +107,6 @@ def list_jobs(limit=50) -> list[dict]:
 def save_approved(service_key: str, service_name: str, state: str,
                   record: dict, job_id: str = None, change_summary: str = None):
     conn = _get_conn()
-
     existing = conn.execute(
         "SELECT version, record_json FROM approved_records WHERE service_key=?",
         (service_key,),

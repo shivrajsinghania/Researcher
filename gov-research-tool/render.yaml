@@ -23,3 +23,5 @@ services:
         value: "3"
       - key: MAX_PDFS
         value: "3"
+      - key: PYTHON_VERSION
+        value: "3.12.7"

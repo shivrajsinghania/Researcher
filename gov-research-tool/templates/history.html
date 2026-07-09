@@ -1,9 +1,7 @@
 {% extends "base.html" %}
-{% block title %}History — GovResearch{% endblock %}
-
+{% block title %}History{% endblock %}
 {% block content %}
 <h2 style="font-size:19px;font-weight:700;margin-bottom:16px">Approved Records</h2>
-
 {% if approved %}
 <div class="card">
   {% for r in approved %}
@@ -30,7 +28,6 @@
 {% endif %}
 
 <h2 style="font-size:19px;font-weight:700;margin:24px 0 16px">Recent Research Jobs</h2>
-
 {% if jobs %}
 <div class="card">
   {% for j in jobs %}
@@ -42,11 +39,8 @@
     </div>
     <div class="row gap-2">
       <span class="badge badge-{{ j.status }}">{{ j.status }}</span>
-      {% if j.status == 'done' %}
-      <a href="/review/{{ j.id }}" class="btn btn-sm">View</a>
-      {% elif j.status == 'running' or j.status == 'pending' %}
-      <a href="/status/{{ j.id }}" class="btn btn-sm">Status</a>
-      {% endif %}
+      {% if j.status == 'done' %}<a href="/review/{{ j.id }}" class="btn btn-sm">View</a>{% endif %}
+      {% if j.status in ['running','pending'] %}<a href="/status/{{ j.id }}" class="btn btn-sm">Status</a>{% endif %}
     </div>
   </div>
   {% endfor %}

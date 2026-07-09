@@ -17,8 +17,6 @@ _HEADERS = {
     "Accept-Language": "en-IN,en;q=0.9,hi;q=0.8",
 }
 
-_NOISE_TAGS = ["script", "style", "noscript", "nav", "footer", "header", "aside"]
-
 
 def _is_whitelisted(url: str, domains: list[str]) -> bool:
     try:
@@ -29,7 +27,6 @@ def _is_whitelisted(url: str, domains: list[str]) -> bool:
 
 
 def _extract_tables(soup: BeautifulSoup) -> str:
-    """Turn HTML tables into plain text key-value pairs."""
     parts = []
     for table in soup.find_all("table"):
         rows = []
@@ -52,18 +49,6 @@ def _extract_lists(soup: BeautifulSoup) -> str:
 
 
 def crawl_page(url: str, domains: list[str]) -> dict:
-    """
-    Returns:
-      {
-        "url": str,
-        "title": str,
-        "text": str,
-        "tables": str,
-        "lists": str,
-        "pdf_links": [str],
-        "error": str | None,
-      }
-    """
     result = {
         "url": url,
         "title": "",

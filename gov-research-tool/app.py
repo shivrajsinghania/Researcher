@@ -1,6 +1,5 @@
 """
-Flask application — provides the review UI and API endpoints for the
-Gov Service Research Tool. Runs as a standalone service on Render.
+Flask application — review UI and API endpoints for the Gov Research Tool.
 """
 import json
 import threading
@@ -19,8 +18,6 @@ app.secret_key = config.SECRET_KEY
 storage.init_db()
 
 
-# ─── Home / Input form ─────────────────────────────────────────────────────────
-
 @app.route("/")
 def index():
     approved = storage.list_approved(limit=30)
@@ -30,21 +27,17 @@ def index():
                            approved=approved)
 
 
-# ─── Start research job ────────────────────────────────────────────────────────
-
 @app.route("/research", methods=["POST"])
 def start_research():
     service_name = (request.form.get("service_name") or "").strip()
     state = (request.form.get("state") or "").strip()
-
     if not service_name or not state:
         return "service_name and state are required", 400
     if state not in config.WHITELIST:
         return f"Unknown scope: {state}", 400
 
     job_id = str(uuid.uuid4())[:12]
-    storage.upsert_job(job_id, service_name, state, status="pending",
-                       progress="Queued...")
+    storage.upsert_job(job_id, service_name, state, status="pending", progress="Queued...")
 
     t = threading.Thread(
         target=orchestrator.run,
@@ -52,11 +45,8 @@ def start_research():
         daemon=True,
     )
     t.start()
-
     return redirect(url_for("status", job_id=job_id))
 
-
-# ─── Re-verify existing record ─────────────────────────────────────────────────
 
 @app.route("/re-verify/<service_key>", methods=["POST"])
 def re_verify(service_key):
@@ -64,25 +54,18 @@ def re_verify(service_key):
     if not existing:
         return f"No approved record found for: {service_key}", 404
 
-    service_name = existing["service_name"]
-    state = existing["state"]
-    old_record = existing["record"]
-
     job_id = str(uuid.uuid4())[:12]
-    storage.upsert_job(job_id, service_name, state, status="pending",
-                       progress="Queued for re-verification...")
+    storage.upsert_job(job_id, existing["service_name"], existing["state"],
+                       status="pending", progress="Queued for re-verification...")
 
     t = threading.Thread(
         target=orchestrator.run,
-        args=(job_id, service_name, state, old_record),
+        args=(job_id, existing["service_name"], existing["state"], existing["record"]),
         daemon=True,
     )
     t.start()
-
     return redirect(url_for("status", job_id=job_id))
 
-
-# ─── Status polling ────────────────────────────────────────────────────────────
 
 @app.route("/status/<job_id>")
 def status(job_id):
@@ -106,8 +89,6 @@ def api_status(job_id):
     })
 
 
-# ─── Review screen ─────────────────────────────────────────────────────────────
-
 @app.route("/review/<job_id>")
 def review(job_id):
     job = storage.get_job(job_id)
@@ -117,10 +98,6 @@ def review(job_id):
         return redirect(url_for("status", job_id=job_id))
 
     record = job["result"]
-    field_status = record.get("field_status", {})
-    is_reverify = record.get("_is_reverify", False)
-    diff = record.get("_diff", {})
-
     schema_fields = [
         ("service_name",    "Service Name",        "text",     True),
         ("state",           "Scope",               "text",     True),
@@ -141,19 +118,16 @@ def review(job_id):
         ("notes",           "Notes",               "textarea", False),
         ("sources",         "Sources",             "list",     True),
     ]
-
     return render_template(
         "review.html",
         job=job,
         record=record,
-        field_status=field_status,
+        field_status=record.get("field_status", {}),
         schema_fields=schema_fields,
-        is_reverify=is_reverify,
-        diff=diff,
+        is_reverify=record.get("_is_reverify", False),
+        diff=record.get("_diff", {}),
     )
 
-
-# ─── Approve and save ──────────────────────────────────────────────────────────
 
 @app.route("/approve/<job_id>", methods=["POST"])
 def approve(job_id):
@@ -163,42 +137,31 @@ def approve(job_id):
 
     base = job["result"] or {}
     data = request.get_json(force=True) or {}
-
     record = {**base, **data}
 
     for list_field in ("documents", "steps", "sources"):
         val = record.get(list_field)
         if isinstance(val, str):
-            record[list_field] = [
-                line.strip() for line in val.split("\n") if line.strip()
-            ]
+            record[list_field] = [l.strip() for l in val.split("\n") if l.strip()]
 
     record.pop("_diff", None)
     record.pop("_is_reverify", None)
     record.pop("field_status", None)
 
     service_key = storage.slugify(record.get("service_name", "unknown"))
-    service_name = record.get("service_name", "")
-    state = record.get("state", job["state"])
     record["service_key"] = service_key
     record["last_verified"] = datetime.utcnow().date().isoformat()
 
-    is_reverify = bool(job["result"].get("_is_reverify"))
-    change_summary = "Re-verified" if is_reverify else "Initial research"
-
     version = storage.save_approved(
         service_key=service_key,
-        service_name=service_name,
-        state=state,
+        service_name=record.get("service_name", ""),
+        state=record.get("state", job["state"]),
         record=record,
         job_id=job_id,
-        change_summary=change_summary,
+        change_summary="Re-verified" if base.get("_is_reverify") else "Initial research",
     )
-
     return jsonify({"ok": True, "service_key": service_key, "version": version})
 
-
-# ─── Export JSON ───────────────────────────────────────────────────────────────
 
 @app.route("/export/<service_key>")
 def export_json(service_key):
@@ -225,16 +188,12 @@ def export_all():
     }
 
 
-# ─── History ───────────────────────────────────────────────────────────────────
-
 @app.route("/history")
 def history():
-    jobs = storage.list_jobs(limit=50)
-    approved = storage.list_approved(limit=200)
-    return render_template("history.html", jobs=jobs, approved=approved)
+    return render_template("history.html",
+                           jobs=storage.list_jobs(limit=50),
+                           approved=storage.list_approved(limit=200))
 
-
-# ─── Health check (Render pings this) ─────────────────────────────────────────
 
 @app.route("/health")
 def health():

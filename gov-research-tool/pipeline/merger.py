@@ -1,6 +1,6 @@
 """
-Merge step — sends all extracted raw data to Gemini and gets back a
-structured record matching the service_knowledge schema exactly.
+Merge step — sends all extracted raw data to Gemini and normalizes it
+into the service_knowledge schema.
 """
 import json
 import re
@@ -11,51 +11,45 @@ import google.generativeai as genai
 import config
 
 _SCHEMA_DESCRIPTION = """
-Output a single JSON object with EXACTLY these fields (no extras, no nesting beyond what is specified):
+Output a single JSON object with EXACTLY these fields (no extras):
 {
-  "service_key":         string  (kebab-case slug of the service name, e.g. "ration-card"),
+  "service_key":         string  (kebab-case slug, e.g. "ration-card"),
   "service_name":        string  (proper name, e.g. "Ration Card"),
   "state":               string  (exact value given: "Bihar" or "Central"),
   "jurisdiction_type":   string  ("state" if Bihar, "central" if Central),
-  "category":            string  (one of: Certificates, Identity, Transport, Land Records, Welfare & Employment, Welfare, Travel, Health, Employment & Finance, Business — pick the best fit),
-  "icon":                string  (leave as empty string ""),
-  "department":          string  (official department name, or "" if not found),
+  "category":            string  (one of: Certificates, Identity, Transport, Land Records, Welfare & Employment, Welfare, Travel, Health, Employment & Finance, Business),
+  "icon":                string  (always empty string ""),
+  "department":          string  (official department name, or ""),
   "portal_name":         string  (name of the official portal, or ""),
   "portal_url":          string  (primary official portal URL, or ""),
-  "apply_url":           string  (direct "Apply Online" URL if different from portal_url, or ""),
-  "documents":           array of strings (each document on its own line, include any requirement notes in parentheses),
-  "eligibility":         string  (who can apply, residency/age/income conditions — full text, or ""),
-  "fees":                string  (exact fee amount and payment method, or "No fee" if free, or "" if not found),
+  "apply_url":           string  (direct apply URL if different, or ""),
+  "documents":           array of strings (each required document as its own item),
+  "eligibility":         string  (full eligibility text, or ""),
+  "fees":                string  (exact fee and payment method, "No fee" if free, or ""),
   "timeline":            string  (processing time e.g. "15 working days", or ""),
-  "photo_size":          string  (exact photo dimensions/specs found e.g. "35mm x 45mm, white background, max 50KB, JPEG", or ""),
+  "photo_size":          string  (exact photo dimensions/specs e.g. "35mm x 45mm, white background, max 50KB, JPEG", or ""),
   "signature_size":      string  (exact signature specs if found, or ""),
-  "upload_limits":       string  (file size/format limits for uploads, or ""),
-  "validity":            string  (how long the document is valid e.g. "10 years", "Lifetime", or ""),
-  "steps":               array of strings (ordered application steps, each step as a plain string),
-  "notes":               string  (anything important that doesn't fit above — conditions, caveats, tips — or ""),
-  "sources":             array of strings (URLs actually used to find information — include all URLs from input),
-  "manual_review_needed": boolean (true if ANY of these is empty/uncertain: department, portal_url, eligibility, fees, timeline, documents array, steps array),
-  "field_status":        object mapping each field name above to one of "found" / "not_found" / "uncertain",
+  "upload_limits":       string  (file size/format upload limits, or ""),
+  "validity":            string  (document validity e.g. "10 years", "Lifetime", or ""),
+  "steps":               array of strings (ordered application steps),
+  "notes":               string  (important caveats/conditions not captured above, or ""),
+  "sources":             array of strings (all URLs from the input that were crawled),
+  "manual_review_needed": boolean (true if ANY of these is empty: department, portal_url, eligibility, fees, timeline, documents, steps),
+  "field_status":        object mapping each field name above to "found" / "not_found" / "uncertain",
   "last_verified":       string  (today's ISO date: {today})
 }
-
 Rules:
-- Never invent information. If a field cannot be found in the provided content, leave it as "" or [] and mark it "not_found" in field_status.
-- Do not add a confidence_score field — it is computed separately.
-- For documents: extract every required document mentioned anywhere in the content.
-- For steps: extract ordered application steps. If the page shows a numbered process, preserve that order.
-- For photo_size and signature_size: be very specific — dimensions, file format, file size limits if stated.
-- For fees: include the exact amount. If the fee varies, list all variants.
-- For eligibility: include age, income, residency, caste, or any other eligibility criteria mentioned.
-- For sources: include ALL URLs from the input (page URLs, PDF URLs) that were actually crawled.
-- field_status values: "found" = content present and confident, "uncertain" = partial/ambiguous, "not_found" = empty.
+- Never invent information. If a field is not found, leave it "" or [] and mark "not_found".
+- Do not add a confidence_score field.
+- For photo_size and signature_size: be specific — dimensions, file format, file size limits.
+- For sources: include ALL URLs provided in the input.
+- field_status: "found" = confident, "uncertain" = partial/ambiguous, "not_found" = empty.
 """
 
 
 def _build_prompt(service_name: str, state: str, raw: dict) -> str:
     today = date.today().isoformat()
     schema = _SCHEMA_DESCRIPTION.replace("{today}", today)
-
     sections = [
         f"# Research Task\nService: {service_name}\nScope: {state}\n",
         schema,
@@ -84,7 +78,7 @@ def _build_prompt(service_name: str, state: str, raw: dict) -> str:
         if browser.get("text"):
             sections.append(f"### Page text\n{browser['text'][:2000]}\n")
         if browser.get("form_fields"):
-            sections.append(f"### Form fields visible\n" +
+            sections.append("### Form fields visible\n" +
                             "\n".join(browser["form_fields"]) + "\n")
         if browser.get("photo_signature_text"):
             sections.append(f"### Photo/Signature lines\n{browser['photo_signature_text']}\n")
@@ -92,8 +86,8 @@ def _build_prompt(service_name: str, state: str, raw: dict) -> str:
             sections.append(f"### Numbered steps\n{browser['steps_text']}\n")
 
     sections.append(
-        "\nNow output ONLY the JSON object described in the schema above. "
-        "No explanation, no markdown code fences, no extra text — just the raw JSON."
+        "\nNow output ONLY the JSON object described above. "
+        "No explanation, no markdown fences, no extra text — just raw JSON."
     )
     return "\n".join(sections)
 
@@ -103,19 +97,12 @@ def _extract_json(text: str) -> dict:
     if text.startswith("```"):
         text = re.sub(r"^```[a-z]*\n?", "", text)
         text = re.sub(r"\n?```$", "", text)
-    text = text.strip()
-    return json.loads(text)
+    return json.loads(text.strip())
 
 
 def merge(service_name: str, state: str, raw: dict, log=None) -> dict:
-    """
-    Calls Gemini to normalize raw extracted data into the service_knowledge schema.
-    Returns the structured dict on success, raises on failure.
-    """
     if not config.GEMINI_API_KEY:
-        raise RuntimeError(
-            "GEMINI_API_KEY is not set. Add it as an environment variable."
-        )
+        raise RuntimeError("GEMINI_API_KEY is not set. Add it as an environment variable.")
 
     genai.configure(api_key=config.GEMINI_API_KEY)
     model = genai.GenerativeModel(config.GEMINI_MODEL)
@@ -124,7 +111,6 @@ def merge(service_name: str, state: str, raw: dict, log=None) -> dict:
         log("Sending to Gemini for normalization...")
 
     prompt = _build_prompt(service_name, state, raw)
-
     response = model.generate_content(
         prompt,
         generation_config=genai.types.GenerationConfig(
@@ -133,11 +119,7 @@ def merge(service_name: str, state: str, raw: dict, log=None) -> dict:
         ),
     )
 
-    result_text = response.text
-    record = _extract_json(result_text)
-
-    if "field_status" not in record:
-        record["field_status"] = {}
+    record = _extract_json(response.text)
 
     all_fields = [
         "service_key", "service_name", "state", "jurisdiction_type", "category",
@@ -145,14 +127,15 @@ def merge(service_name: str, state: str, raw: dict, log=None) -> dict:
         "eligibility", "fees", "timeline", "photo_size", "signature_size",
         "upload_limits", "validity", "steps", "notes", "sources",
     ]
+    if "field_status" not in record:
+        record["field_status"] = {}
     for f in all_fields:
         if f not in record["field_status"]:
             val = record.get(f)
             if isinstance(val, list):
-                status = "found" if val else "not_found"
+                record["field_status"][f] = "found" if val else "not_found"
             else:
-                status = "found" if str(val or "").strip() else "not_found"
-            record["field_status"][f] = status
+                record["field_status"][f] = "found" if str(val or "").strip() else "not_found"
 
     record.pop("confidence_score", None)
 

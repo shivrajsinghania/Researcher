@@ -1,10 +1,6 @@
 """
 Browser automation step — uses Playwright Chromium to open the actual
-"Apply Online" page (or portal home) and extract:
-  - Visible form fields (tells us what documents/info is required)
-  - Photo/signature dimension text in instructions
-  - Step-by-step flow from breadcrumbs or numbered lists
-  - Any PDF links not found by the plain crawler
+"Apply Online" page and extract form fields, photo/signature specs, steps.
 """
 import asyncio
 import re
@@ -87,19 +83,11 @@ async def _run_browser(url: str, service_name: str) -> dict:
 
 
 def automate(apply_url: str, service_name: str, log=None) -> dict:
-    """
-    Synchronous wrapper around the async Playwright step.
-    Returns the result dict from _run_browser.
-    """
     if not config.PLAYWRIGHT_ENABLED:
         return {
-            "url": apply_url,
-            "text": "",
-            "form_fields": [],
-            "photo_signature_text": "",
-            "steps_text": "",
-            "extra_pdf_links": [],
-            "error": "playwright_disabled",
+            "url": apply_url, "text": "", "form_fields": [],
+            "photo_signature_text": "", "steps_text": "",
+            "extra_pdf_links": [], "error": "playwright_disabled",
         }
     if log:
         log(f"Browser automation: opening {apply_url[:60]}...")
@@ -112,11 +100,7 @@ def automate(apply_url: str, service_name: str, log=None) -> dict:
         if log:
             log(f"Browser step failed: {e}")
         return {
-            "url": apply_url,
-            "text": "",
-            "form_fields": [],
-            "photo_signature_text": "",
-            "steps_text": "",
-            "extra_pdf_links": [],
-            "error": str(e),
+            "url": apply_url, "text": "", "form_fields": [],
+            "photo_signature_text": "", "steps_text": "",
+            "extra_pdf_links": [], "error": str(e),
         }

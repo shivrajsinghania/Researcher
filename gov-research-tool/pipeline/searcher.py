@@ -22,7 +22,6 @@ _HEADERS = {
 
 
 def _ddg_search(query: str, max_results: int = 5) -> list[str]:
-    """Search DuckDuckGo Lite (no JS, no API key needed) and return result URLs."""
     urls: list[str] = []
     try:
         params = {"q": query, "kl": "in-en"}
@@ -61,10 +60,6 @@ def _is_whitelisted(url: str, domains: list[str]) -> bool:
 
 
 def _direct_probe(service_name: str, domains: list[str]) -> list[str]:
-    """
-    Directly probe known URL patterns on each whitelisted domain by fetching
-    the domain root and looking for links that mention the service.
-    """
     slug = re.sub(r"[^a-z0-9]+", "-", service_name.strip().lower()).strip("-")
     keywords = slug.replace("-", " ").split()
     found: list[str] = []
@@ -86,14 +81,6 @@ def _direct_probe(service_name: str, domains: list[str]) -> list[str]:
 
 
 def discover(service_name: str, state: str, log=None) -> dict:
-    """
-    Returns:
-      {
-        "page_urls": [...],
-        "pdf_urls":  [...],
-      }
-    Only URLs on whitelisted domains are included.
-    """
     domains = list(config.WHITELIST.get(state, []))
     if not domains:
         return {"page_urls": [], "pdf_urls": []}

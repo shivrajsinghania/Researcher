@@ -1,115 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Review — {{ record.service_name }}{% endblock %}
-
 {% block head %}
 <style>
-  .field-row {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-soft);
-  }
-  .field-row:last-child { border-bottom: none; }
-
-  .field-label {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 5px; flex-wrap: wrap;
-  }
-  .field-label strong { font-size: 12.5px; font-weight: 700; color: #cbd5e1;
-    text-transform: uppercase; letter-spacing: .03em; }
-
-  .field-value {
-    font-size: 14px; line-height: 1.5;
-    color: var(--text); min-height: 20px;
-  }
-  .field-source { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
-  .field-source a { color: var(--muted); text-decoration: underline; font-size: 11px; }
-
-  .edit-input, .edit-textarea {
-    display: none;
-    background: var(--bg); color: var(--text);
-    border: 1px solid var(--accent); border-radius: 8px;
-    padding: 8px 10px; font-size: 14px; width: 100%;
-    font-family: inherit;
-  }
-  .edit-textarea { resize: vertical; min-height: 70px; }
-
-  .list-item {
-    display: flex; align-items: flex-start; gap: 8px;
-    padding: 5px 0; border-bottom: 1px dashed var(--border-soft);
-    font-size: 14px;
-  }
-  .list-item:last-child { border-bottom: none; }
-  .list-num {
-    flex-shrink: 0; width: 20px; height: 20px;
-    border-radius: 50%; background: var(--accent-soft); color: var(--accent);
-    font-size: 11px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; margin-top: 1px;
-  }
-  .list-bullet { flex-shrink: 0; color: var(--muted); margin-top: 2px; }
-
-  .diff-changed { background: rgba(250,204,21,0.08); border-left: 3px solid var(--warn); padding-left: 8px; }
-  .diff-old { font-size: 12px; color: var(--muted); text-decoration: line-through; margin-bottom: 2px; }
-
-  .sticky-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--panel); border-top: 1px solid var(--border);
-    padding: 12px 16px; display: flex; gap: 10px; justify-content: center;
-    flex-wrap: wrap; z-index: 200;
-  }
-
-  .toast {
-    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: var(--panel); border: 1px solid var(--border);
-    padding: 10px 18px; border-radius: 10px; font-size: 13.5px;
-    z-index: 300; opacity: 0; transition: opacity .2s; pointer-events: none;
-    white-space: nowrap;
-  }
-  .toast.show { opacity: 1; }
-  .toast.success { border-color: var(--success); color: var(--success); }
-  .toast.error-t { border-color: var(--danger); color: var(--danger); }
-
-  .reverify-banner {
-    background: rgba(250,204,21,0.08); border: 1px solid var(--warn);
-    border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
-    font-size: 13.5px; color: var(--warn);
-  }
-  .no-change { color: var(--success); font-size: 12px; }
+  .field-row { padding:12px 0; border-bottom:1px solid var(--border-soft); }
+  .field-row:last-child { border-bottom:none; }
+  .field-label { display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap; }
+  .field-label strong { font-size:12.5px;font-weight:700;color:#cbd5e1;
+                        text-transform:uppercase;letter-spacing:.03em; }
+  .field-value { font-size:14px;line-height:1.5;color:var(--text);min-height:20px;cursor:pointer; }
+  .field-value:hover { opacity:.85; }
+  .edit-input, .edit-textarea { display:none;background:var(--bg);color:var(--text);
+    border:1px solid var(--accent);border-radius:8px;padding:8px 10px;
+    font-size:14px;width:100%;font-family:inherit; }
+  .edit-textarea { resize:vertical;min-height:70px; }
+  .list-item { display:flex;align-items:flex-start;gap:8px;padding:5px 0;
+               border-bottom:1px dashed var(--border-soft);font-size:14px; }
+  .list-item:last-child { border-bottom:none; }
+  .list-num { flex-shrink:0;width:20px;height:20px;border-radius:50%;
+              background:var(--accent-soft);color:var(--accent);
+              font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px; }
+  .list-bullet { flex-shrink:0;color:var(--muted);margin-top:2px; }
+  .diff-changed { background:rgba(250,204,21,0.08);border-left:3px solid var(--warn);padding-left:8px; }
+  .diff-old { font-size:12px;color:var(--muted);text-decoration:line-through;margin-bottom:2px; }
+  .sticky-bar { position:fixed;bottom:0;left:0;right:0;background:var(--panel);
+                border-top:1px solid var(--border);padding:12px 16px;
+                display:flex;gap:10px;justify-content:center;flex-wrap:wrap;z-index:200; }
+  .toast { position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+           background:var(--panel);border:1px solid var(--border);
+           padding:10px 18px;border-radius:10px;font-size:13.5px;
+           z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap; }
+  .toast.show { opacity:1; }
+  .toast.success { border-color:var(--success);color:var(--success); }
+  .toast.err { border-color:var(--danger);color:var(--danger); }
+  .reverify-banner { background:rgba(250,204,21,0.08);border:1px solid var(--warn);
+                     border-radius:12px;padding:12px 16px;margin-bottom:16px;
+                     font-size:13.5px;color:var(--warn); }
 </style>
 {% endblock %}
-
 {% block content %}
 
 {% if is_reverify %}
 <div class="reverify-banner">
   <strong>Re-verification run</strong> —
-  {% if diff %}
-    {{ diff | length }} field(s) changed since last approved version. Changed fields are highlighted below.
-  {% else %}
-    No changes detected. All fields match the previously approved record.
-  {% endif %}
+  {% if diff %}{{ diff|length }} field(s) changed since last approved version.
+  {% else %}No changes detected.{% endif %}
 </div>
 {% endif %}
 
 <div class="card">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <div>
       <div style="font-size:19px;font-weight:700">{{ record.service_name }}</div>
-      <div class="hint">{{ record.state }} &nbsp;·&nbsp; {{ record.last_verified or '' }}
-        &nbsp;·&nbsp; Job: {{ job.id }}
-      </div>
+      <div class="hint">{{ record.state }} · {{ record.last_verified or '' }} · Job: {{ job.id }}</div>
     </div>
-    <div class="row gap-2" style="flex-shrink:0">
-      {% set review_needed = record.get('manual_review_needed', false) %}
-      {% if review_needed %}
-      <span class="badge badge-uncertain">Needs review</span>
-      {% else %}
-      <span class="badge badge-found">Ready</span>
-      {% endif %}
-    </div>
+    {% if record.get('manual_review_needed') %}
+    <span class="badge badge-uncertain">Needs review</span>
+    {% else %}
+    <span class="badge badge-found">Ready</span>
+    {% endif %}
   </div>
-
-  <div style="margin-top:8px;font-size:12px;color:var(--muted)">
-    Click any field value to edit it before approving.
-  </div>
+  <div style="margin-top:8px;font-size:12px;color:var(--muted)">Tap any field to edit before approving.</div>
 </div>
 
 <form id="reviewForm">
@@ -122,89 +72,55 @@
   <div class="field-row {% if changed %}diff-changed{% endif %}" id="row-{{ field_key }}">
     <div class="field-label">
       <strong>{{ field_label }}</strong>
-      <span class="badge badge-{{ status }}">{{ status.replace('_', ' ') }}</span>
+      <span class="badge badge-{{ status }}">{{ status.replace('_',' ') }}</span>
       {% if is_important and status == 'not_found' %}
       <span class="badge" style="background:rgba(248,113,113,0.12);color:var(--danger);font-size:10px">required</span>
       {% endif %}
-      {% if changed %}
-      <span class="badge badge-uncertain" style="font-size:10px">changed</span>
-      {% endif %}
+      {% if changed %}<span class="badge badge-uncertain" style="font-size:10px">changed</span>{% endif %}
     </div>
 
     {% if changed %}
     <div class="diff-old">Was: {{ diff[field_key].old | string | truncate(120) }}</div>
     {% endif %}
 
-    <div class="field-value" id="display-{{ field_key }}" onclick="startEdit('{{ field_key }}', '{{ field_type }}')">
+    <div class="field-value" id="display-{{ field_key }}" onclick="startEdit('{{ field_key }}','{{ field_type }}')">
       {% if field_type == 'list' %}
         {% if val %}
-          {% if field_key == 'steps' %}
-            {% for item in val %}
-            <div class="list-item">
-              <span class="list-num">{{ loop.index }}</span>
-              <span>{{ item }}</span>
-            </div>
-            {% endfor %}
-          {% elif field_key == 'sources' %}
-            {% for item in val %}
-            <div class="list-item">
-              <span class="list-bullet">•</span>
-              <a href="{{ item }}" target="_blank" rel="noopener">{{ item | truncate(70) }}</a>
-            </div>
-            {% endfor %}
-          {% else %}
-            {% for item in val %}
-            <div class="list-item">
-              <span class="list-bullet">•</span>
-              <span>{{ item }}</span>
-            </div>
-            {% endfor %}
-          {% endif %}
-        {% else %}
-          <span class="muted" style="font-size:13px;font-style:italic">Not found — click to add manually</span>
-        {% endif %}
-
+          {% for item in val %}
+          <div class="list-item">
+            {% if field_key == 'steps' %}<span class="list-num">{{ loop.index }}</span>
+            {% else %}<span class="list-bullet">•</span>{% endif %}
+            {% if field_key == 'sources' %}<a href="{{ item }}" target="_blank" rel="noopener">{{ item|truncate(70) }}</a>
+            {% else %}<span>{{ item }}</span>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}<span class="muted" style="font-size:13px;font-style:italic">Not found — tap to add</span>{% endif %}
       {% elif field_type == 'textarea' %}
-        {% if val %}
-          <span style="white-space:pre-wrap">{{ val }}</span>
-        {% else %}
-          <span class="muted" style="font-size:13px;font-style:italic">Not found — click to add</span>
-        {% endif %}
-
+        {% if val %}<span style="white-space:pre-wrap">{{ val }}</span>
+        {% else %}<span class="muted" style="font-size:13px;font-style:italic">Not found — tap to add</span>{% endif %}
       {% elif field_type == 'url' %}
-        {% if val %}
-          <a href="{{ val }}" target="_blank" rel="noopener">{{ val }}</a>
-        {% else %}
-          <span class="muted" style="font-size:13px;font-style:italic">Not found — click to add</span>
-        {% endif %}
-
+        {% if val %}<a href="{{ val }}" target="_blank" rel="noopener">{{ val }}</a>
+        {% else %}<span class="muted" style="font-size:13px;font-style:italic">Not found — tap to add</span>{% endif %}
       {% else %}
-        {% if val %}{{ val }}{% else %}
-          <span class="muted" style="font-size:13px;font-style:italic">Not found — click to add</span>
-        {% endif %}
+        {% if val %}{{ val }}
+        {% else %}<span class="muted" style="font-size:13px;font-style:italic">Not found — tap to add</span>{% endif %}
       {% endif %}
     </div>
 
-    {% if field_type in ['text', 'url'] %}
-    <input type="hidden" name="{{ field_key }}" id="input-{{ field_key }}" value="{{ val or '' }}">
-    <input class="edit-input" id="edit-{{ field_key }}"
-           type="{{ 'url' if field_type == 'url' else 'text' }}"
+    <input type="hidden" name="{{ field_key }}" id="input-{{ field_key }}"
+           value="{{ (val or []) | join('\n') if field_type == 'list' else (val or '') }}">
+    {% if field_type in ['text','url'] %}
+    <input class="edit-input" id="edit-{{ field_key }}" type="{{ 'url' if field_type=='url' else 'text' }}"
            value="{{ val or '' }}"
-           onblur="commitEdit('{{ field_key }}', '{{ field_type }}')"
-           onkeydown="if(event.key==='Enter'){commitEdit('{{ field_key }}', '{{ field_type }}');}"
-    >
+           onblur="commit('{{ field_key }}','{{ field_type }}')"
+           onkeydown="if(event.key==='Enter')commit('{{ field_key }}','{{ field_type }}')">
     {% elif field_type == 'textarea' %}
-    <input type="hidden" name="{{ field_key }}" id="input-{{ field_key }}" value="{{ val or '' }}">
     <textarea class="edit-textarea" id="edit-{{ field_key }}"
-              onblur="commitEdit('{{ field_key }}', '{{ field_type }}')"
-    >{{ val or '' }}</textarea>
+              onblur="commit('{{ field_key }}','{{ field_type }}')">{{ val or '' }}</textarea>
     {% elif field_type == 'list' %}
-    <input type="hidden" name="{{ field_key }}" id="input-{{ field_key }}" value="{{ (val or []) | join('\n') }}">
-    <textarea class="edit-textarea" id="edit-{{ field_key }}"
-              placeholder="One item per line"
-              onblur="commitEdit('{{ field_key }}', '{{ field_type }}')"
-              style="min-height:90px"
-    >{{ (val or []) | join('\n') }}</textarea>
+    <textarea class="edit-textarea" id="edit-{{ field_key }}" placeholder="One item per line"
+              onblur="commit('{{ field_key }}','{{ field_type }}')"
+              style="min-height:90px">{{ (val or []) | join('\n') }}</textarea>
     {% endif %}
   </div>
   {% endfor %}
@@ -212,124 +128,89 @@
 </form>
 
 <div style="height:70px"></div>
-
 <div class="sticky-bar">
-  <button class="btn" onclick="approveAll()" id="approveBtn">
-    ✓ Approve &amp; Save
-  </button>
-  <a href="/export/{{ record.service_key }}" class="btn btn-sm"
-     id="exportBtn" style="display:none">Export JSON</a>
+  <button class="btn btn-accent" onclick="approveAll()" id="approveBtn">✓ Approve &amp; Save</button>
+  <a href="/export/{{ record.get('service_key','') }}" class="btn btn-sm" id="exportBtn" style="display:none">Export JSON</a>
   <a href="/" class="btn btn-sm">← Back</a>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-  const jobId = "{{ job.id }}";
+const jobId = "{{ job.id }}";
 
-  function startEdit(key, type) {
-    const display = document.getElementById('display-' + key);
-    const editEl  = document.getElementById('edit-'    + key);
-    if (!editEl) return;
-    display.style.display = 'none';
-    editEl.style.display  = 'block';
-    editEl.focus();
-    if (editEl.tagName === 'TEXTAREA') {
-      editEl.selectionStart = editEl.selectionEnd = editEl.value.length;
-    }
+function startEdit(key, type) {
+  document.getElementById('display-'+key).style.display = 'none';
+  const e = document.getElementById('edit-'+key);
+  e.style.display = 'block'; e.focus();
+}
+
+function commit(key, type) {
+  const e = document.getElementById('edit-'+key);
+  const d = document.getElementById('display-'+key);
+  const inp = document.getElementById('input-'+key);
+  const val = e.value;
+  inp.value = val;
+
+  let html = '';
+  if (type === 'list') {
+    const lines = val.split('\n').filter(l => l.trim());
+    html = lines.length ? lines.map((l,i) =>
+      key==='steps'
+        ? `<div class="list-item"><span class="list-num">${i+1}</span><span>${esc(l)}</span></div>`
+        : `<div class="list-item"><span class="list-bullet">•</span><span>${esc(l)}</span></div>`
+    ).join('') : '<span class="muted" style="font-size:13px;font-style:italic">Empty</span>';
+  } else if (type === 'url') {
+    html = val ? `<a href="${esc(val)}" target="_blank">${esc(val)}</a>`
+               : '<span class="muted" style="font-size:13px;font-style:italic">Empty</span>';
+  } else if (type === 'textarea') {
+    html = val ? `<span style="white-space:pre-wrap">${esc(val)}</span>`
+               : '<span class="muted" style="font-size:13px;font-style:italic">Empty</span>';
+  } else {
+    html = val || '<span class="muted" style="font-size:13px;font-style:italic">Empty</span>';
   }
+  d.innerHTML = html; d.style.display = ''; e.style.display = 'none';
+}
 
-  function commitEdit(key, type) {
-    const editEl   = document.getElementById('edit-'    + key);
-    const display  = document.getElementById('display-' + key);
-    const inputEl  = document.getElementById('input-'   + key);
-    if (!editEl) return;
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-    const val = editEl.value;
-    inputEl.value = val;
+function gatherData() {
+  const data = {};
+  document.querySelectorAll('#reviewForm input[type=hidden]').forEach(el => {
+    const isList = ['documents','steps','sources'].includes(el.name);
+    data[el.name] = isList ? el.value.split('\n').filter(l=>l.trim()) : el.value;
+  });
+  return data;
+}
 
-    let html = '';
-    if (type === 'list') {
-      const lines = val.split('\n').filter(l => l.trim());
-      if (!lines.length) {
-        html = '<span class="muted" style="font-size:13px;font-style:italic">Empty — click to edit</span>';
-      } else {
-        html = lines.map((l, i) =>
-          key === 'steps'
-            ? '<div class="list-item"><span class="list-num">' + (i+1) + '</span><span>' + escHtml(l) + '</span></div>'
-            : '<div class="list-item"><span class="list-bullet">•</span><span>' + escHtml(l) + '</span></div>'
-        ).join('');
-      }
-    } else if (type === 'url') {
-      html = val
-        ? '<a href="' + escHtml(val) + '" target="_blank" rel="noopener">' + escHtml(val) + '</a>'
-        : '<span class="muted" style="font-size:13px;font-style:italic">Empty — click to edit</span>';
-    } else if (type === 'textarea') {
-      html = val
-        ? '<span style="white-space:pre-wrap">' + escHtml(val) + '</span>'
-        : '<span class="muted" style="font-size:13px;font-style:italic">Empty — click to edit</span>';
-    } else {
-      html = val || '<span class="muted" style="font-size:13px;font-style:italic">Empty — click to edit</span>';
-    }
-
-    display.innerHTML = html;
-    display.style.display = '';
-    editEl.style.display  = 'none';
-  }
-
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function gatherData() {
-    const data = {};
-    document.querySelectorAll('#reviewForm input[type=hidden]').forEach(el => {
-      const key = el.name;
-      const val = el.value;
-      const isListField = ['documents','steps','sources'].includes(key);
-      if (isListField) {
-        data[key] = val.split('\n').filter(l => l.trim());
-      } else {
-        data[key] = val;
-      }
+async function approveAll() {
+  const btn = document.getElementById('approveBtn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  try {
+    const res = await fetch('/approve/'+jobId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(gatherData())
     });
-    return data;
-  }
-
-  async function approveAll() {
-    const btn = document.getElementById('approveBtn');
-    btn.textContent = 'Saving…';
-    btn.disabled = true;
-
-    try {
-      const data = gatherData();
-      const res = await fetch('/approve/' + jobId, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (json.ok) {
-        showToast('Saved as ' + json.service_key + ' (v' + json.version + ')', 'success');
-        document.getElementById('exportBtn').style.display = '';
-        btn.textContent = '✓ Approved';
-      } else {
-        showToast(json.error || 'Save failed', 'error-t');
-        btn.textContent = '✓ Approve & Save';
-        btn.disabled = false;
-      }
-    } catch (e) {
-      showToast('Network error: ' + e.message, 'error-t');
-      btn.textContent = '✓ Approve & Save';
-      btn.disabled = false;
+    const j = await res.json();
+    if (j.ok) {
+      toast('Saved as '+j.service_key+' (v'+j.version+')', 'success');
+      document.getElementById('exportBtn').style.display = '';
+      btn.textContent = '✓ Approved';
+    } else {
+      toast(j.error||'Save failed','err');
+      btn.textContent = '✓ Approve & Save'; btn.disabled = false;
     }
+  } catch(e) {
+    toast('Network error: '+e.message,'err');
+    btn.textContent = '✓ Approve & Save'; btn.disabled = false;
   }
+}
 
-  function showToast(msg, cls) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show ' + (cls || '');
-    setTimeout(() => { t.className = 'toast'; }, 3500);
-  }
+function toast(msg, cls) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show '+(cls||'');
+  setTimeout(()=>{ t.className='toast'; }, 3500);
+}
 </script>
 {% endblock %}

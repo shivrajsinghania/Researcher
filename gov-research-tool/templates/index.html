@@ -1,29 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Gov Research Tool{% endblock %}
-
 {% block content %}
 <div class="card">
   <div class="card-title">Research a Government Service</div>
   <p class="hint" style="margin-bottom:16px">
-    Enter a service name and scope. The tool will search official government sites,
-    extract all relevant information, and give you a pre-filled review form
-    ready to approve into your database.
-    <br><br>
-    <strong>Realistic timing:</strong> 1–3 minutes per service (search + crawl + OCR + Playwright + Gemini).
-    Cold start on Render free tier may add 30–60s.
+    Enter a service name and scope. The tool searches official government sites,
+    extracts all relevant data, and gives you a pre-filled review form.<br><br>
+    <strong>Timing:</strong> 1–3 min per service. Cold start on Render adds 30–60s.
   </p>
-
   <form method="post" action="/research">
     <div class="field">
       <label>Service name *</label>
-      <input
-        type="text"
-        name="service_name"
-        placeholder="e.g. Ration Card, Aadhar Card, Income Certificate, PAN Card"
-        required
-        autocomplete="off"
-        list="service-suggestions"
-      >
+      <input type="text" name="service_name" required autocomplete="off"
+             placeholder="e.g. Ration Card, Aadhar Card, PAN Card, Income Certificate"
+             list="service-suggestions">
       <datalist id="service-suggestions">
         <option value="Ration Card">
         <option value="Aadhar Card">
@@ -39,9 +29,8 @@
         <option value="E-Shram Card">
       </datalist>
     </div>
-
     <div class="field">
-      <label>Scope (Jurisdiction) *</label>
+      <label>Scope *</label>
       <select name="state" required>
         {% for scope in scopes %}
         <option value="{{ scope }}">
@@ -50,8 +39,8 @@
         {% endfor %}
       </select>
     </div>
-
-    <button type="submit" class="btn btn-accent" style="width:100%;justify-content:center;margin-top:4px">
+    <button type="submit" class="btn btn-accent"
+            style="width:100%;justify-content:center;margin-top:4px">
       Start Research
     </button>
   </form>
@@ -60,23 +49,21 @@
 {% if approved %}
 <div class="card">
   <div class="card-title">Approved Records</div>
-  <div style="display:flex;flex-direction:column;gap:8px">
-    {% for r in approved %}
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;
-                padding:8px 0;border-bottom:1px solid var(--border-soft)">
-      <div>
-        <div style="font-size:14px;font-weight:600">{{ r.service_name }}</div>
-        <div class="hint">{{ r.state }} · v{{ r.version }} · {{ r.approved_at[:10] }}</div>
-      </div>
-      <div class="row gap-2">
-        <form method="post" action="/re-verify/{{ r.service_key }}" style="display:inline">
-          <button type="submit" class="btn btn-sm">Re-verify</button>
-        </form>
-        <a href="/export/{{ r.service_key }}" class="btn btn-sm">Export</a>
-      </div>
+  {% for r in approved %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;
+              padding:8px 0;border-bottom:1px solid var(--border-soft)">
+    <div>
+      <div style="font-size:14px;font-weight:600">{{ r.service_name }}</div>
+      <div class="hint">{{ r.state }} · v{{ r.version }} · {{ r.approved_at[:10] }}</div>
     </div>
-    {% endfor %}
+    <div class="row gap-2">
+      <form method="post" action="/re-verify/{{ r.service_key }}" style="display:inline">
+        <button type="submit" class="btn btn-sm">Re-verify</button>
+      </form>
+      <a href="/export/{{ r.service_key }}" class="btn btn-sm">Export</a>
+    </div>
   </div>
+  {% endfor %}
 </div>
 {% endif %}
 {% endblock %}

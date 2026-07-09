@@ -1,9 +1,8 @@
 """
-PDF extraction step — text-based PDFs use pdfplumber; scanned/image PDFs
-fall back to Tesseract OCR via pdf2image + pytesseract.
+PDF extraction — text-based PDFs use pdfplumber; scanned/image PDFs fall
+back to Tesseract OCR via pdf2image + pytesseract.
 """
 import io
-import os
 
 import requests
 
@@ -35,7 +34,6 @@ def _fetch_pdf(url: str) -> bytes | None:
 def _extract_text_pdfplumber(data: bytes) -> str:
     try:
         import pdfplumber
-
         text_parts = []
         with pdfplumber.open(io.BytesIO(data)) as pdf:
             for page in pdf.pages[:10]:
@@ -55,11 +53,9 @@ def _extract_text_pdfplumber(data: bytes) -> str:
 
 
 def _ocr_pdf(data: bytes) -> str:
-    """Fallback: convert PDF pages to images and OCR each one."""
     try:
         from pdf2image import convert_from_bytes
         import pytesseract
-
         images = convert_from_bytes(data, dpi=200, first_page=1, last_page=5)
         parts = []
         for img in images:
@@ -73,15 +69,6 @@ def _ocr_pdf(data: bytes) -> str:
 
 
 def extract_pdf(url: str) -> dict:
-    """
-    Returns:
-      {
-        "url": str,
-        "text": str,
-        "method": "pdfplumber" | "ocr" | "failed",
-        "error": str | None,
-      }
-    """
     result = {"url": url, "text": "", "method": "failed", "error": None}
     data = _fetch_pdf(url)
     if not data:
@@ -94,7 +81,7 @@ def extract_pdf(url: str) -> dict:
         result["method"] = "pdfplumber"
         return result
 
-    print(f"[pdf_handler] pdfplumber returned sparse text, trying OCR for {url}")
+    print(f"[pdf_handler] sparse text, trying OCR for {url}")
     text = _ocr_pdf(data)
     if text:
         result["text"] = text
