@@ -117,6 +117,8 @@ def merge(service_name: str, state: str, raw: dict, log=None) -> dict:
             temperature=0.1,
             max_output_tokens=4096,
         ),
+        request_options={"timeout": 60},  # hard cap so a stalled API call
+                                           # can't hang the whole job forever
     )
 
     record = _extract_json(response.text)
