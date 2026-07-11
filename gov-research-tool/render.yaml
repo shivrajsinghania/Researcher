@@ -27,3 +27,5 @@ services:
         value: "3.12.7"
       - key: PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS
         value: "1"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/project/.playwright
