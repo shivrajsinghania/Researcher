@@ -1,7 +1,7 @@
 import os
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-in-prod")
 
