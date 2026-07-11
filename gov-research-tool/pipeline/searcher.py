@@ -92,36 +92,35 @@ def discover(service_name: str, state: str, log=None) -> dict:
     pdf_urls: list[str] = []
     seen: set[str] = set()
 
-    search_queries = [
-        f"{service_name} {state} apply documents eligibility",
-        f"{service_name} {state} government portal fees timeline",
-        f"{service_name} {state} application form photo signature specifications",
-    ]
-    if state == "Bihar":
-        search_queries.append(f"{service_name} Bihar RTPS serviceonline")
+    # Combine into ONE query per domain instead of 3-4, to keep total search
+    # time bounded — DuckDuckGo can be slow/rate-limited on scripted requests,
+    # so fewer sequential calls matters more than exhaustive query variety.
+    combined_query = f"{service_name} {state} apply documents eligibility fees photo signature"
 
-    for q in search_queries:
-        for domain in domains:
-            query = f"site:{domain} {q}"
-            results = _ddg_search(query, max_results=4)
-            time.sleep(0.5)
-            for url in results:
-                if url in seen:
-                    continue
-                seen.add(url)
-                if url.lower().endswith(".pdf"):
-                    pdf_urls.append(url)
-                elif _is_whitelisted(url, domains):
-                    page_urls.append(url)
-
-    probed = _direct_probe(service_name, domains)
-    for url in probed:
-        if url not in seen:
+    for domain in domains:
+        query = f"site:{domain} {combined_query}"
+        results = _ddg_search(query, max_results=6)
+        time.sleep(0.3)
+        for url in results:
+            if url in seen:
+                continue
             seen.add(url)
             if url.lower().endswith(".pdf"):
                 pdf_urls.append(url)
-            else:
+            elif _is_whitelisted(url, domains):
                 page_urls.append(url)
+
+    # Only fall back to direct-probing the homepage if search found little —
+    # this avoids N extra requests when search already succeeded.
+    if len(page_urls) + len(pdf_urls) < 3:
+        probed = _direct_probe(service_name, domains)
+        for url in probed:
+            if url not in seen:
+                seen.add(url)
+                if url.lower().endswith(".pdf"):
+                    pdf_urls.append(url)
+                else:
+                    page_urls.append(url)
 
     pdf_urls = pdf_urls[: config.MAX_PDFS]
     page_urls = page_urls[: config.MAX_PAGES_PER_DOMAIN * len(domains)]
